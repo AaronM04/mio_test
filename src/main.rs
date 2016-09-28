@@ -41,21 +41,12 @@ impl Handler for UdpHandler {
                        let received = self.rx.recv_from(&mut buf);//.unwrap().unwrap();
                        println!("Received datagram...");
                        
+                        // right now this crashes upon message received!
+// thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', ../src/libcore/option.rs:325
+                        
+                        // How come this is of value None at this point????
                        let (size, sock) = received.unwrap().unwrap();
-                       /*
-                       if recv_result.is_err() {
-                            // debug b/c we're returning the error explicitly
-                            println!("could not recv_from on {:?}: {:?}", self.rx, recv_result);
-                            return
-                      }
-                       
-                      if recv_result.as_ref().unwrap().is_none() {
-                         // debug b/c we're returning the error explicitly
-                         println!("no return address on recv_from: {:?}", self.rx);
-                         
-                         return
-                        }
-                        */
+
                         let addr = Some(sock);
                         println!("bytes: {:?} from: {:?}", size, addr);
                        
