@@ -14,16 +14,16 @@ use packet::Packet;
 
 const SERVER: Token = Token(10_000_000);
 
-static mut packetCounter: u32 = 0;
-
 pub struct UdpHandler {
     rx: UdpSocket,
+    packetCounter: u32,
 }
 
 impl UdpHandler {
     fn new(rx: UdpSocket) -> UdpHandler {
         UdpHandler {
             rx: rx,
+            packetCounter: 0,
         }
     }
 }
@@ -51,9 +51,9 @@ impl Handler for UdpHandler {
 
                             let decoded: Packet = bincode::rustc_serialize::decode(&data[..]).unwrap();
 
-                            unsafe {packetCounter+=1;
+                            self.packetCounter += 1;
 
-                            println!("{}", packetCounter);}
+                            println!("{}", self.packetCounter);
 
                            //println!("We are receiving a datagram now...");
                           // println!("Packet: {:?}", decoded);
@@ -93,7 +93,7 @@ fn socket(listen_on: net::SocketAddr) -> mio::udp::UdpSocket {
 pub fn main() {
     let mut event_loop = EventLoop::new().unwrap();
 
-    let ip = net::Ipv4Addr::new(127, 0, 0, 1);
+    let ip = net::Ipv4Addr::new(0, 0, 0, 0);
     let listen_addr = net::SocketAddrV4::new(ip, 8890);
     let skt = socket(net::SocketAddr::V4(listen_addr));
 
