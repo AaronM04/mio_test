@@ -12,7 +12,8 @@ net2     = "0.2.19"
 env_logger = "0.3.0"
 tempdir    = "0.3.4"
 bytes      = "0.3.0"
-
+rustc-serialize = "0.3"
+bincode = "0.6.0"
 
 [target.'cfg(unix)'.dependencies]
 nix    = "0.6.0"

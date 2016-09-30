@@ -1,4 +1,6 @@
 extern crate mio;
+extern crate bincode;
+extern crate rustc_serialize;
 
 use std::thread;
 use mio::*;
@@ -7,22 +9,21 @@ use mio::udp::*;
 use std::net;
 use std::io;
 
+mod packet;
+use packet::Packet;
+
 const SERVER: Token = Token(10_000_000);
 
+static mut packetCounter: u32 = 0;
+
 pub struct UdpHandler {
-    tx: UdpSocket,
     rx: UdpSocket,
-    msg: Vec<u8>,
 }
 
 impl UdpHandler {
-    fn new(tx: UdpSocket, rx: UdpSocket, msg : Vec<u8>) -> UdpHandler {
+    fn new(rx: UdpSocket) -> UdpHandler {
         UdpHandler {
-            tx: tx,
             rx: rx,
-            msg: msg,
-    //        buf: SliceBuf::wrap(msg.as_bytes()),
-    //        rx_buf: RingBuf::new(1024)
         }
     }
 }
@@ -37,25 +38,27 @@ impl Handler for UdpHandler {
                match token {
                    SERVER => {
                        let mut buf: [u8; 1472] = [0; 1472];
-                       
+
                        let received = self.rx.recv_from(&mut buf);//.unwrap().unwrap();
                        println!("Received datagram...");
-                       
-                        // right now this crashes upon message received!
-// thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', ../src/libcore/option.rs:325
-                        
-                        // How come this is of value None at this point????
-                       let (size, sock) = received.unwrap().unwrap();
 
-                        let addr = Some(sock);
-                        println!("bytes: {:?} from: {:?}", size, addr);
-                       
-                        let data = Vec::from(&buf[0..size]);
+                       if let Some((size, sock)) = received.unwrap() {//.unwrap();
 
-                       
-                       println!("We are receiving a datagram now...");
-                       println!("Msg: {:?}", data);
-                       event_loop.shutdown();
+                            let addr = Some(sock);
+                            //println!("bytes: {:?} from: {:?}", size, addr);
+
+                            let data = Vec::from(&buf[0..size]);
+
+                            let decoded: Packet = bincode::rustc_serialize::decode(&data[..]).unwrap();
+
+                            unsafe {packetCounter+=1;
+
+                            println!("{}", packetCounter);}
+
+                           //println!("We are receiving a datagram now...");
+                          // println!("Packet: {:?}", decoded);
+                          // event_loop.shutdown();
+                       }
                    },
                    _ => ()
                }
@@ -89,22 +92,12 @@ fn socket(listen_on: net::SocketAddr) -> mio::udp::UdpSocket {
 
 pub fn main() {
     let mut event_loop = EventLoop::new().unwrap();
-    
+
     let ip = net::Ipv4Addr::new(127, 0, 0, 1);
     let listen_addr = net::SocketAddrV4::new(ip, 8890);
     let skt = socket(net::SocketAddr::V4(listen_addr));
-    
+
     event_loop.register(&skt, SERVER, Ready::readable(), PollOpt::edge()).unwrap();
-    
-    
-    //let sender = event_loop.channel();
 
-    // Send the notification from another thread
-//    thread::spawn(move || {
-    //    let _ = sender.send(123);
-//    });
-
-    let sk2 = socket(net::SocketAddr::V4(net::SocketAddrV4::new(ip, 8891)));
-
-    let _ = event_loop.run(&mut UdpHandler::new(skt, sk2, vec![1,2,3,4,5]));
+    let _ = event_loop.run(&mut UdpHandler::new(skt));
 }
